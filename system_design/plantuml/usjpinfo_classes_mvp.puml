@@ -1,0 +1,168 @@
+
+@startuml USJPInfo_ClassDiagram_MVP
+' =====================================================
+' USJPInfo – MVP Class Diagram (Django models orientation)
+' Focus: Structure, Templates, Schedules, Print & Archive
+' =====================================================
+hide circle
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+skinparam packageStyle rectangle
+
+' -------------------
+' Accounts (roles)
+' -------------------
+package "accounts" #F6F2FF {
+  class User {
+    +id: UUID
+    +username: str
+    +email: str
+    +is_active: bool
+  }
+  class Manager
+  class Assistant
+
+  User <|-- Manager
+  User <|-- Assistant
+}
+
+' -------------------
+' Structure
+' -------------------
+package "structure" #F1FFF1 {
+  class Zone {
+    +id: UUID
+    +zone_id: str
+    +zone_name: str
+    +description: text
+  }
+
+  class Section {
+    +id: UUID
+    +section_id: str
+    +section_name: str
+    +description: text
+  }
+
+  class Faculty {
+    +id: UUID
+    +faculty_id: str
+    +faculty_name: str
+  }
+
+  class Unit {
+    +id: UUID
+    +unit_id: str
+    +unit_name: str
+    +description: text
+    +is_active: bool
+  }
+
+  Zone "1" -- "0..*" Section
+  Section "1" -- "0..*" Unit
+  Faculty "1" -- "0..*" Unit
+
+  ' Assistant assignment history (for auditability & filtering)
+  class AssistantAssignment {
+    +id: UUID
+    +start_date: date
+    +end_date: date?
+  }
+  Assistant "1" -- "0..*" AssistantAssignment
+  Unit "1" -- "0..*" AssistantAssignment
+}
+
+' -------------------
+' Templates (CSTemplate)
+' -------------------
+package "cstemplates" #FFF6E9 {
+  class CSTemplate {
+    +id: UUID
+    +name: str
+    +version: int
+    +is_draft: bool
+    +created_by: Manager
+    +created_at: datetime
+    +month_days: int
+  }
+
+  ' Optional minimal activity list (kept lean for MVP)
+  class TemplateActivity {
+    +id: UUID
+    +name: str
+    +display_order: int
+  }
+
+  CSTemplate "1" -- "0..*" TemplateActivity
+
+  ' Template assignment history per Unit (tracks which version applied when)
+  class UnitTemplateAssignment {
+    +id: UUID
+    +start_date: date
+    +end_date: date?
+  }
+  Unit "1" -- "0..*" UnitTemplateAssignment
+  CSTemplate "1" -- "0..*" UnitTemplateAssignment
+}
+
+' -------------------
+' Cleaning (Schedules)
+' -------------------
+package "cleaning" #E9F5FF {
+  class Schedule {
+    +id: UUID
+    +month: date  "first day of month"
+    +status: ScheduleStatus
+    +created_at: datetime
+    +submitted_at: datetime?
+    +closed_at: datetime?
+  }
+
+  enum ScheduleStatus {
+    DRAFT
+    ACTIVE
+    SUBMITTED
+    CLOSED
+    ARCHIVED
+  }
+
+  class ScheduleCell {
+    +id: UUID
+    +day: int         "1..month_days"
+    +activity_name: str
+    +budgeted: decimal(5,2)
+    +actual: decimal(5,2)?
+    +notes: text?
+  }
+
+  Unit "1" -- "0..*" Schedule
+  CSTemplate "1" -- "0..*" Schedule : instantiated_from
+  Schedule "1" -- "0..*" ScheduleCell
+}
+
+' -------------------
+' Reporting / Archive
+' -------------------
+package "reporting" #FFF9D9 {
+  class ArchivedDocument {
+    +id: UUID
+    +file_path: str
+    +generated_at: datetime
+    +mime_type: str
+    +checksum: str
+    +tags_json: text  "zone,section,unit,faculty,year,month,assistant"
+  }
+
+  Schedule "1" -- "0..1" ArchivedDocument : archived_as
+}
+
+' -------------------
+' Cross-package references
+' -------------------
+structure.Unit ..> cstemplates.CSTemplate : "assigned via history"
+cleaning.Schedule ..> structure.Unit
+cleaning.Schedule ..> cstemplates.CSTemplate
+
+@enduml

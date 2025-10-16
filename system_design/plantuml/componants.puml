@@ -1,0 +1,22 @@
+' -----------------------------------------
+' SECTION 2 — COMPONENT/PACKAGE DIAGRAM
+' -----------------------------------------
+@startuml Components
+skinparam componentStyle rectangle
+
+package "usjpinfo (Django Project)" {
+  [accounts] as ACC
+  [structure] as STR
+  [cstemplates] as TPL
+  [cleaning] as CLN
+  [reports] as RPT
+}
+
+ACC --> STR : manages assistants/assignments
+STR --> ACC : ownership/ACLs
+TPL --> STR : template assigned to Unit
+CLN --> STR : schedule belongs to Unit
+CLN --> TPL : instantiate from CSTemplate
+RPT --> CLN : aggregates (month, zone)
+RPT --> STR : hierarchy (Zone/Section/Unit)
+@enduml

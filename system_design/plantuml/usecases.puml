@@ -1,0 +1,152 @@
+
+@startuml USJPInfo_UseCases
+' ===============================================
+' USJPInfo – Use Case Diagram (Managers, Assistants, System)
+' ===============================================
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #f7f7ff
+  BorderColor #4b4b8f
+}
+skinparam actor {
+  BorderColor #333333
+  BackgroundColor white
+}
+
+' Actors
+actor Manager as MGR
+actor Assistant as AST
+actor "System (Scheduler/Jobs)" as SYS
+
+' -----------------------------
+' Structure Module
+' -----------------------------
+package "StructureModule" #DDFFDD {
+  usecase "(UC-S01)\nManage Zones (CRUD)" as UC_S01
+  usecase "(UC-S02)\nManage Sections (CRUD, pick Zone)" as UC_S02
+  usecase "(UC-S03)\nManage Faculties (CRUD)" as UC_S03
+  usecase "(UC-S04)\nManage Units (CRUD,\npick Section & Faculty)" as UC_S04
+  usecase "(UC-S05)\nManage Assistants (CRUD)" as UC_S05
+  usecase "(UC-S06)\nAssign Assistants to Units\n(with start/end dates)" as UC_S06
+  usecase "(UC-S07)\nView Assignment History" as UC_S07
+}
+
+' Relationships (Structure)
+MGR --> UC_S01
+MGR --> UC_S02
+MGR --> UC_S03
+MGR --> UC_S04
+MGR --> UC_S05
+MGR --> UC_S06
+MGR --> UC_S07
+
+' -----------------------------
+' Template Module (CSTemplates)
+' -----------------------------
+package "TemplateModule" #FFEEDD {
+  usecase "(UC-T01)\nCreate CSTemplate (Draft)" as UC_T01
+  usecase "(UC-T02)\nEdit Draft CSTemplate" as UC_T02
+  usecase "(UC-T03)\nPublish CSTemplate" as UC_T03
+  usecase "(UC-T04)\nVersion CSTemplate\n(published → new version;\nexisting schedules unchanged)" as UC_T04
+  usecase "(UC-T05)\nRetire/Hide CSTemplate" as UC_T05
+  usecase "(UC-T06)\nAssign CSTemplate to Unit\n(with start/end dates)" as UC_T06
+  usecase "(UC-T07)\nView Template Assignment History" as UC_T07
+  usecase "(UC-T08)\nValidate Template\n(activities × days completeness)" as UC_T08
+}
+
+MGR --> UC_T01
+MGR --> UC_T02
+MGR --> UC_T03
+MGR --> UC_T04
+MGR --> UC_T05
+MGR --> UC_T06
+MGR --> UC_T07
+MGR --> UC_T08
+
+' -----------------------------
+' Cleaning Module (Schedules)
+' -----------------------------
+package "CleaningModule" #E9F5FF {
+  usecase "(UC-C01)\nAuto-Create Monthly Schedules" as UC_C01
+  usecase "(UC-C02)\nManually Create Schedules" as UC_C02
+  usecase "(UC-C03)\nActivate Schedules (Open)" as UC_C03
+  usecase "(UC-C04)\nNotify Assistants on Activation" as UC_C04
+  usecase "(UC-C05)\nEnter Actuals" as UC_C05
+  usecase "(UC-C06)\nSubmit Schedule" as UC_C06
+  usecase "(UC-C07)\nLate-Submission Reminders" as UC_C07
+  usecase "(UC-C08)\nAuto-Deactivate Prev. Month" as UC_C08
+  usecase "(UC-C09)\nManually Re-Activate Schedules" as UC_C09
+  usecase "(UC-C10)\nClose Reviewed Schedules" as UC_C10
+  usecase "(UC-C11)\nArchive Finalized Schedules to PDF" as UC_C11
+  usecase "(UC-C12)\nView/Filter/Print Summaries" as UC_C12
+  usecase "(UC-C13)\nExport Summaries (PDF/Excel/CSV)" as UC_C13
+}
+
+' Relationships (Cleaning)
+SYS --> UC_C01
+MGR --> UC_C02
+SYS --> UC_C03
+SYS --> UC_C04
+MGR --> UC_C04
+AST --> UC_C05
+AST --> UC_C06
+SYS --> UC_C07
+MGR --> UC_C07
+SYS --> UC_C08
+MGR --> UC_C09
+MGR --> UC_C10
+SYS --> UC_C11
+MGR --> UC_C12
+MGR --> UC_C13
+
+' -----------------------------
+' Notifications & Audit
+' -----------------------------
+package "Notifications & Audit" #FFF8CC {
+  usecase "(UC-N01)\nSend Bulk/Targeted Notifications" as UC_N01
+  usecase "(UC-N02)\nConfigure Notification Templates/Timing" as UC_N02
+  usecase "(UC-A01)\nRecord Audit Events" as UC_A01
+  usecase "(UC-A02)\nView Audit Log" as UC_A02
+}
+
+MGR --> UC_N01
+MGR --> UC_N02
+SYS --> UC_A01
+MGR --> UC_A02
+
+' -----------------------------
+' Access & Admin
+' -----------------------------
+package "Access & System Admin" #F2E6FF {
+  usecase "(UC-X01)\nAuthenticate User" as UC_X01
+  usecase "(UC-X02)\nRole-Based Access Control" as UC_X02
+  usecase "(UC-X03)\nManage Working-Day Rules" as UC_X03
+  usecase "(UC-X04)\nConfigure Automation Windows" as UC_X04
+  usecase "(UC-X05)\nData Retention & Backup/Restore" as UC_X05
+}
+
+MGR --> UC_X01
+AST --> UC_X01
+SYS --> UC_X02
+MGR --> UC_X03
+MGR --> UC_X04
+MGR --> UC_X05
+
+' Notes to emphasize automation and versioning
+note right of UC_C01
+Runs on schedule.
+Creates one schedule per (Unit, Month)
+based on the template version active
+on the assignment start date.
+end note
+
+note right of UC_T04
+Versioning rule:
+Updating a published template creates
+a new version. Existing schedules remain
+linked to their original version.
+end note
+
+@enduml

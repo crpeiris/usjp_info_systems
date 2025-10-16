@@ -1,0 +1,86 @@
+
+@startuml USJPInfo_UseCases_MVP_PrintArchive
+' ================================================
+' USJPInfo – MVP Use Case Diagram (Print & Archive Focus)
+' Actors: Manager, Assistant, System
+' ================================================
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #F7F7F7
+  BorderColor #555555
+}
+skinparam actor {
+  BorderColor #333333
+  BackgroundColor white
+}
+
+' Actors
+actor Manager as MGR
+actor Assistant as AST
+actor "System" as SYS
+
+' -------- Structure (minimal) --------
+package "Structure" #DDFFDD {
+  usecase "UC-S1\nManage Core Structure\n(Zones, Sections, Units, Faculties)" as UCS1
+  usecase "UC-S2\nManage Assistants & Assign to Units" as UCS2
+}
+MGR --> UCS1
+MGR --> UCS2
+
+' -------- Templates (minimal) --------
+package "Templates" #FFEEDD {
+  usecase "UC-T1\nCreate & Publish CSTemplate" as UCT1
+  usecase "UC-T2\nAssign CSTemplate to Units" as UCT2
+}
+MGR --> UCT1
+MGR --> UCT2
+
+' -------- Schedules (Monthly Flow) --------
+package "Schedules" #E9F5FF {
+  usecase "UC-C1\nAuto-Create Monthly Schedules" as UCC1
+  usecase "UC-C2\nActivate Schedules & Notify" as UCC2
+  usecase "UC-C3\nEnter Actuals" as UCC3
+  usecase "UC-C4\nSubmit Schedule" as UCC4
+  usecase "UC-C5\nClose Month (Lock Final)" as UCC5
+}
+SYS --> UCC1
+SYS --> UCC2
+AST --> UCC3
+AST --> UCC4
+MGR --> UCC5
+
+' -------- Reporting & Archival (priority) --------
+package "Reporting & Archival (Priority)" #FFF5D6 {
+  usecase "UC-R1\nArchive Finalized Schedules to PDF\n(with tags)" as UCR1
+  usecase "UC-R2\nView/Filter Monthly Summaries" as UCR2
+  usecase "UC-R3\nPrint / Export Summaries\n(PDF/Excel)" as UCR3
+}
+' Triggers & responsibilities
+SYS --> UCR1
+MGR --> UCR2
+MGR --> UCR3
+
+' -------- Access / Guardrails --------
+usecase "UC-X1\nAuthenticate & Authorize" as UCX1
+MGR --> UCX1
+AST --> UCX1
+
+' ------ Notes ------
+note right of UCC1
+One schedule per (Unit, Month),
+derived from the Unit's currently
+assigned template/version.
+end note
+
+note right of UCR1
+Archive rule:
+Only CLOSED schedules are archived.
+Each PDF is tagged with:
+Zone, Section, Unit, Faculty,
+Year, Month, Assistant.
+Files are immutable.
+end note
+
+@enduml
