@@ -1,0 +1,125 @@
+@startuml
+title Usjpinfo — Whole System Activity Diagram (MVP)
+
+skinparam activity {
+  BackgroundColor #FFFFFF
+  BarColor #777777
+  BorderColor #222222
+  StartColor #222222
+  EndColor #222222
+  FontSize 12
+}
+skinparam shadowing false
+skinparam ArrowColor #555555
+skinparam roundcorner 10
+skinparam ParticipantPadding 15
+skinparam BoxPadding 10
+
+'==========================
+' Swimlanes (MVP actors)
+'==========================
+partition "System Admin (MVP setup)" {
+  start
+  :Sign in;
+  :Create Org Structure\n(units/locations);
+  :Create Users & Assign Roles\n(Manager, Assistant);
+  :Configure Basic Settings\n(working days, time zone);
+  :Sign out;
+}
+
+partition "Manager" {
+  :Sign in;
+  if (Select action) then (Template Mgmt)
+    :Create/Update Template\n(minimal fields, print rules);
+    :Submit for Publish;
+  elseif (Schedule Mgmt)
+    :Create Schedule from\nPublished Template Version;
+    :Select Periodicity\n(daily/weekly) + Duration;
+    :Assign Assistant(s);
+  else (Review/Reporting)
+    :Open Submitted Records\n(filter by schedule/date/assistant);
+  endif
+}
+
+partition "System" {
+  if (Incoming: Template Submit?) then (yes)
+    :Validate Template\n(required fields, keys, rules);
+    if (Update to published?) then (yes)
+      :Create NEW Template Version;\nKeep prior version immutable;
+      note right
+        MVP Rule:
+        Updating a published template
+        always creates a new version.
+        Existing schedules keep their
+        bound (older) version.
+      end note
+    else (no)
+      :Publish Template v1;
+    endif
+  endif
+
+  if (Incoming: Schedule Create?) then (yes)
+    :Bind Schedule → Selected\nTemplate Version (freeze);
+    :Notify Assigned Assistant(s);
+  endif
+}
+
+partition "Assistant" {
+  if (Assigned to schedule?) then (yes)
+    :Sign in;
+    :Open Assigned Schedule\n(form from bound version);
+    repeat
+      :Enter Data (tasks/notes)\n+ attachments (optional);
+      :Save Draft;
+    repeat while (More entries?) is (yes)
+    :Submit Record(s) for Review;
+  endif
+}
+
+partition "System" {
+  if (Incoming: Record Submit?) then (yes)
+    :Timestamp & Lock Draft → Submitted;
+    :Notify Manager for Review;
+  endif
+}
+
+partition "Manager" {
+  if (Review queue) then (open)
+    :Open Submitted Record;
+    if (Meets criteria?) then (Approve)
+      :Approve Record;
+    else (Request changes)
+      :Request Changes with comments;
+    endif
+  endif
+}
+
+partition "Assistant" {
+  if (Changes requested?) then (yes)
+    :Revise Record;
+    :Re-Submit for Review;
+  endif
+}
+
+partition "System" {
+  if (Approved?) then (yes)
+    :Set Record State = Approved (locked);
+    fork
+      :Generate Print-ready PDF;
+      :Queue/Log Print Job;
+    fork again
+      :Archive Final Record\n(file + metadata + hash + audit);
+    end fork
+    :Update Print/Archive History;
+    :Notify Manager/Assistant (done);
+  endif
+}
+
+partition "Manager" {
+  :Optional: Re-print from history;
+  :Export Minimal Report (CSV/PDF)\n(by date/schedule/assistant);
+  :Sign out;
+  stop
+}
+
+@enduml
